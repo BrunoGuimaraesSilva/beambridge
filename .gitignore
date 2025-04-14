@@ -1,0 +1,31 @@
+# Go
+tmp/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+vendor/
+
+# BeamBridge-specific
+Uploads/
+Tmp/
+
+# Docker
+*.log
+docker-compose.override.yml
+
+# Environment
+.env
+.env.local
+*.env
+
+# Editor/OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Dependency directories (if vendoring)
+vendor/
