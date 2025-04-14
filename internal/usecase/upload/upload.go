@@ -3,6 +3,8 @@ package upload
 import (
 	"context"
 
+	"maps"
+
 	"github.com/BrunoGuimaraesSilva/beambridge/internal/domain"
 	"github.com/BrunoGuimaraesSilva/beambridge/internal/port"
 )
@@ -24,7 +26,6 @@ func New(fileRepo port.FileRepository, sessionRepo port.SessionRepository, stora
 }
 
 func (u *Upload) UploadChunk(ctx context.Context, uploadID string, file *domain.File, index int, data []byte) error {
-	// Existing chunk upload logic (unchanged)
 	if err := file.AddChunk(index, data); err != nil {
 		return err
 	}
@@ -45,9 +46,7 @@ func (u *Upload) UploadChunk(ctx context.Context, uploadID string, file *domain.
 		if err != nil {
 			return err
 		}
-		for k, v := range meta {
-			file.Metadata[k] = v
-		}
+		maps.Copy(file.Metadata, meta)
 		if err := u.fileRepo.SaveFile(ctx, file); err != nil {
 			return err
 		}
@@ -56,19 +55,16 @@ func (u *Upload) UploadChunk(ctx context.Context, uploadID string, file *domain.
 }
 
 func (u *Upload) UploadFile(ctx context.Context, uploadID string, file *domain.File, data []byte) error {
-	// Save full file directly
 	path, err := u.storage.SaveFile(ctx, file.ID.String(), file.Name, data)
 	if err != nil {
 		return err
 	}
 	file.Metadata["path"] = path
 
-	// Update progress to 100% (single upload)
 	if err := u.sessionRepo.UpdateProgress(ctx, uploadID, 100); err != nil {
 		return err
 	}
 
-	// Extract and save metadata
 	meta, err := u.metadata.Extract(ctx, file)
 	if err != nil {
 		return err
@@ -84,7 +80,6 @@ func (u *Upload) UploadFile(ctx context.Context, uploadID string, file *domain.F
 }
 
 func (u *Upload) UploadLivePhoto(ctx context.Context, uploadID string, livePhoto *domain.LivePhoto, fileType string, index int, data []byte) error {
-	// Existing Live Photo logic (unchanged)
 	targetFile := livePhoto.ImageFile
 	if fileType == "video" {
 		targetFile = livePhoto.VideoFile

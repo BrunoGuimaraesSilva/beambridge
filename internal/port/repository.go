@@ -15,3 +15,8 @@ type SessionRepository interface {
 	UpdateProgress(ctx context.Context, uploadID string, percent int) error
 	GetProgress(ctx context.Context, uploadID string) (int, error)
 }
+
+type UserRepository interface {
+	SaveUser(ctx context.Context, user *domain.User) error
+	FindUserByEmail(ctx context.Context, email string) (*domain.User, error)
+}

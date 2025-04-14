@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/BrunoGuimaraesSilva/beambridge/internal/domain"
 	"github.com/BrunoGuimaraesSilva/beambridge/internal/usecase/progress"
 )
 
@@ -22,13 +23,13 @@ func (h *ProgressHandler) StreamProgress(w http.ResponseWriter, r *http.Request)
 
 	uploadID := r.URL.Query().Get("uploadId")
 	if uploadID == "" {
-		http.Error(w, "Missing uploadId", http.StatusBadRequest)
+		domain.BadRequestError("Missing uploadId", "Must be a valid upload ID")
 		return
 	}
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		http.Error(w, "Streaming not supported", http.StatusInternalServerError)
+		domain.InternalError("Streaming not supported", "Server does not support streaming")
 		return
 	}
 

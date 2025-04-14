@@ -1,23 +1,29 @@
 package http
 
 import (
-	"net/http"
-
+	"github.com/BrunoGuimaraesSilva/beambridge/internal/usecase/auth"
 	"github.com/BrunoGuimaraesSilva/beambridge/internal/usecase/progress"
 	"github.com/BrunoGuimaraesSilva/beambridge/internal/usecase/upload"
 	"github.com/go-chi/chi/v5"
 )
 
-func SetupRoutes(r *chi.Mux, uploadUsecase *upload.Upload, progressUsecase *progress.Progress) {
+func SetupRoutes(r *chi.Mux, uploadUsecase *upload.Upload, progressUsecase *progress.Progress, authUsecase *auth.Auth, jwtSecret string) {
 	uploadHandler := NewUploadHandler(uploadUsecase)
 	progressHandler := NewProgressHandler(progressUsecase)
+	authHandler := NewAuthHandler(authUsecase)
+	r.Use(JSONMiddleware)
 
-	r.Post("/upload/chunk", uploadHandler.UploadChunk)
-	r.Post("/upload/file", uploadHandler.UploadFile)
+	r.Route("/auth", func(r chi.Router) {
+		r.Post("/register", authHandler.Register)
+		r.Post("/login", authHandler.Login)
+		r.Get("/refresh", authHandler.RefreshToken)
+	})
+
+	r.Route("/upload", func(r chi.Router) {
+		r.Use(AuthMiddleware(jwtSecret))
+		r.Post("/chunk", uploadHandler.UploadChunk)
+		r.Post("/file", uploadHandler.UploadFile)
+	})
+
 	r.Get("/progress", progressHandler.StreamProgress)
-	r.Get("/api", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"message": "Welcome to api.beambridge.com"}`))
-	}))
 }

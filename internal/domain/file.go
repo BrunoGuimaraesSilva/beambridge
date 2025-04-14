@@ -21,7 +21,7 @@ type File struct {
 
 func NewFile(name string, size int64) (*File, error) {
 	if name == "" || size <= 0 {
-		return nil, fmt.Errorf("invalid file name or size")
+		return nil, ValidationError("invalid file name or size", "file name and size must be provided")
 	}
 	chunkCount := int((size + ChunkSize - 1) / ChunkSize)
 	return &File{
@@ -36,10 +36,10 @@ func NewFile(name string, size int64) (*File, error) {
 
 func (f *File) AddChunk(index int, data []byte) error {
 	if index < 0 || index >= f.ChunkCount {
-		return fmt.Errorf("invalid chunk index")
+		return ValidationError("invalid chunk index", fmt.Sprintf("chunk index must be between 0 and %d", f.ChunkCount-1))
 	}
 	if len(data) > ChunkSize {
-		return fmt.Errorf("chunk size exceeds limit")
+		return ValidationError("chunk size exceeded", fmt.Sprintf("chunk size must not exceed %d bytes", ChunkSize))
 	}
 	f.Chunks[index] = data
 	return nil

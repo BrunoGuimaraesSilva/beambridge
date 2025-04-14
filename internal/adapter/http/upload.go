@@ -17,7 +17,8 @@ func NewUploadHandler(usecase *upload.Upload) *UploadHandler {
 }
 
 func (h *UploadHandler) UploadChunk(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(32 << 20) // 32MB
+	MAX_CHUNK_SIZE := 32 << 20
+	err := r.ParseMultipartForm(int64(MAX_CHUNK_SIZE))
 	if err != nil {
 		http.Error(w, "Failed to parse form", http.StatusBadRequest)
 		return
@@ -25,37 +26,35 @@ func (h *UploadHandler) UploadChunk(w http.ResponseWriter, r *http.Request) {
 
 	fileName := r.FormValue("fileName")
 	uploadID := r.FormValue("uploadId")
-	index := 0                          // Simplified: parse from form if needed
-	fileType := r.FormValue("fileType") // "image" or "video" for Live Photos
+	index := 0
+	fileType := r.FormValue("fileType")
 
 	f, _, err := r.FormFile("chunk")
 	if err != nil {
-		http.Error(w, "Failed to read chunk", http.StatusBadRequest)
+		domain.BadRequestError("Failed to read chunk", "Must be a valid file")
 		return
 	}
 	defer f.Close()
 
 	data, err := io.ReadAll(f)
 	if err != nil {
-		http.Error(w, "Failed to read chunk data", http.StatusBadRequest)
+		domain.BadRequestError("Failed to read chunk data", "Must be a valid file")
 		return
 	}
 
-	// Mock file creation (in reality, fetch from session or DB)
-	file, err := domain.NewFile(fileName, int64(len(data)*2)) // Dummy size
+	DUMMY_SIZE := int64(len(data) * 2)
+	file, err := domain.NewFile(fileName, DUMMY_SIZE)
 	if err != nil {
-		http.Error(w, "Invalid file", http.StatusBadRequest)
+		domain.BadRequestError("Invalid file", "Must be a valid file")
 		return
 	}
 
 	if fileType == "" {
-		// Regular file upload
 		err = h.usecase.UploadChunk(r.Context(), uploadID, file, index, data)
 	} else {
-		// Live Photo upload
 		livePhoto, err := domain.NewLivePhoto(fileName+".jpg", int64(len(data)), fileName+".mov", int64(len(data)))
 		if err != nil {
-			http.Error(w, "Invalid Live Photo", http.StatusBadRequest)
+			domain.BadRequestError("Invalid Live Photo", "Must be a valid file")
 			return
 		}
 		_ = h.usecase.UploadLivePhoto(r.Context(), uploadID, livePhoto, fileType, index, data)
@@ -70,35 +69,36 @@ func (h *UploadHandler) UploadChunk(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(32 << 20) // 32MB
+	MAX_FILE_SIZE := 32 << 20
+	err := r.ParseMultipartForm(int64(MAX_FILE_SIZE))
 	if err != nil {
-		http.Error(w, "Failed to parse form", http.StatusBadRequest)
+		domain.BadRequestError("Failed to parse form", "Must be a valid file")
 		return
 	}
 
 	fileName := r.FormValue("fileName")
 	uploadID := r.FormValue("uploadId")
 	if fileName == "" || uploadID == "" {
-		http.Error(w, "Missing fileName or uploadId", http.StatusBadRequest)
+		domain.BadRequestError("Missing fileName or uploadId", "Must be a valid file")
 		return
 	}
 
 	f, _, err := r.FormFile("file")
 	if err != nil {
-		http.Error(w, "Failed to read file", http.StatusBadRequest)
+		domain.BadRequestError("Failed to read file", "Must be a valid file")
 		return
 	}
 	defer f.Close()
 
 	data, err := io.ReadAll(f)
 	if err != nil {
-		http.Error(w, "Failed to read file data", http.StatusBadRequest)
+		domain.BadRequestError("Failed to read file data", "Must be a valid file")
 		return
 	}
 
 	file, err := domain.NewFile(fileName, int64(len(data)))
 	if err != nil {
-		http.Error(w, "Invalid file", http.StatusBadRequest)
+		domain.BadRequestError("Invalid file", "Must be a valid file")
 		return
 	}
 
