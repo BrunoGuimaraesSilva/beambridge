@@ -1,0 +1,74 @@
+# BeamBridge Architecture Overview
+
+## Purpose
+BeamBridge is a file transfer system designed to move photos, videos, and media (including iPhone Live Photos) from a phone to a PC efficiently. The system supports large file uploads, real-time progress tracking, and metadata management, making it a practical showcase of modern software design. The chosen architecture ensures the project is simple to build, easy to maintain, and ready to grow, while demonstrating best practices for a portfolio project.
+
+## Architecture: Hybrid Hexagonal-Clean
+BeamBridge uses a **Hybrid Hexagonal-Clean Architecture**, blending two popular design approaches to balance simplicity and structure:
+- **Hexagonal Architecture**: Organizes the system around a core of business logic, connecting to external tools (like databases or web servers) through flexible interfaces called ports and adapters. This makes it easy to swap components, such as changing storage from a local disk to cloud storage.
+- **Clean Architecture**: Separates the core logic into distinct layers for data (entities) and actions (use cases), keeping the system clear and testable.
+
+This hybrid approach is guided by **SOLID principles**, which ensure each part of the system has a single job, is easy to extend, and works seamlessly with other components.
+
+### Why This Architecture?
+- **Simplicity**: The hexagonal structure keeps the MVP lean, focusing on file uploads and progress tracking without unnecessary complexity.
+- **Flexibility**: Ports and adapters allow easy changes, like adding new storage options or metadata tools, without rewriting the core system.
+- **Clarity**: Clean’s layering separates file data and upload logic, making the code easy to understand and test.
+- **Scalability**: The design supports future features (e.g., cloud storage, new file types) while keeping the current system stable.
+- **Portfolio Appeal**: It showcases modern, practical design that balances real-world needs with best practices.
+
+## How It Works
+The architecture organizes the Go backend into four main parts:
+1. **Core Data (Domain)**:
+   - Defines the basic building blocks: files (with chunks) and Live Photos (image + video pairs).
+   - Includes rules, like ensuring chunks are valid sizes or linking Live Photos correctly.
+   - Keeps data independent from external tools for clarity.
+
+2. **Core Actions (Use Cases)**:
+   - Handles the system’s key tasks:
+     - **Upload**: Processes file chunks, assembles them, and stores metadata.
+     - **Progress**: Tracks uploads and sends real-time updates.
+   - Acts as the brain, coordinating data and external systems without knowing their details.
+
+3. **Interfaces (Ports)**:
+   - Defines how the core talks to the outside world through simple contracts for:
+     - Saving files (e.g., to disk).
+     - Storing metadata (e.g., in PostgreSQL).
+     - Caching progress (e.g., in Redis).
+     - Extracting metadata (e.g., from images or videos).
+   - Ensures the core stays flexible and doesn’t depend on specific tools.
+
+4. **Connectors (Adapters)**:
+   - Links the core to real systems:
+     - **Web**: Handles HTTP requests for uploads and SSE for progress updates.
+     - **Database**: Saves file details in PostgreSQL.
+     - **Cache**: Tracks upload progress in Redis.
+     - **Storage**: Stores files on a local disk (for the MVP).
+     - **Metadata**: Extracts image and video details using tools like ExifTool and FFmpeg.
+   - Can be swapped (e.g., disk to cloud storage) without changing the core.
+
+## System Flow
+- **Uploading a File**:
+  - The web adapter receives a file chunk from the frontend (Next.js).
+  - The upload action validates the chunk, saves it to storage, and updates progress in the cache.
+  - If it’s the final chunk, metadata is extracted and saved to the database.
+- **Tracking Progress**:
+  - The web adapter opens a connection for real-time updates.
+  - The progress action checks the cache and sends percentage updates to the frontend.
+- **Handling Live Photos**:
+  - Image and video chunks are processed together, linked in the database, and tracked in the cache.
+  - Metadata (like date taken) is extracted and stored for both parts.
+
+## Benefits
+- **Easy to Build**: The simple structure lets us focus on core features (uploads, progress, Live Photos) for the MVP.
+- **Easy to Test**: Clear boundaries make it straightforward to test each part independently.
+- **Ready to Grow**: Adding new features, like cloud storage or file compression, requires only new connectors, keeping the core stable.
+- **Reliable**: SOLID principles ensure components are focused, reusable, and loosely connected, reducing bugs and maintenance effort.
+- **Showcase Quality**: The design highlights modern architecture skills, making BeamBridge a standout portfolio piece.
+
+## Tools and Integration
+- **Go Backend**: Powers the core logic, storage, and real-time updates.
+- **Next.js Frontend**: Sends file chunks and displays progress.
+- **PostgreSQL**: Stores file and Live Photos metadata (e.g., size, date taken).
+- **Redis**: Caches upload progress for fast tracking.
+- **ExifTool/FFmpeg**: Extracts metadata from images and videos.
